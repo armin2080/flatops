@@ -1,0 +1,12 @@
+{
+  // FlatOps project configuration for the tgcloud CLI.
+  // `static` points at the Mini App build output. `spa` lets the client-side
+  // router reload correctly; Vite content-hashed assets get a 1-year cache.
+  "$schema": "./node_modules/@tgcloud/cli/schema/tgcloud.json",
+  "static": {
+    "source": "dist",
+    "spa": true,
+    "immutable": ["/assets/*"],
+    "headers": [{ "path": "/*", "set": { "Referrer-Policy": "no-referrer" } }]
+  }
+}
