@@ -27,6 +27,8 @@ const PROVIDERS = {
  * @param {string} mimeType image mime type.
  * @returns a normalised extraction result (see validate.js).
  */
+const REPAIR_INSTRUCTION = 'Your previous answer was not valid JSON. Respond with ONLY a single valid JSON object matching the requested schema. No reasoning, no thinking, no prose, no markdown. Start with "{" and end with "}".';
+
 export async function extractReceipt(settings, imageBytes, mimeType) {
   const providerName = (settings.aiProvider || 'openai').toLowerCase();
   const provider = PROVIDERS[providerName];
@@ -35,12 +37,26 @@ export async function extractReceipt(settings, imageBytes, mimeType) {
   }
 
   const imageBase64 = bytesToBase64(imageBytes);
-  const rawText = await provider(fetch, settings, imageBase64, mimeType || 'image/jpeg');
+  const mime = mimeType || 'image/jpeg';
 
-  const raw = parseModelOutput(rawText);
+  let rawText = await provider(fetch, settings, imageBase64, mime);
+  let raw = parseModelOutput(rawText);
+
+  if (!raw) {
+    // The model produced prose/reasoning or truncated JSON. Retry once with an
+    // explicit JSON-only instruction — the most reliable way to recover.
+    try {
+      rawText = await provider(fetch, settings, imageBase64, mime, REPAIR_INSTRUCTION);
+      raw = parseModelOutput(rawText);
+    } catch (err) {
+      console.warn('repair extraction failed', err && err.message ? err.message : err);
+    }
+  }
+
   const result = normalizeExtraction(raw);
   if (!result.ok) {
-    throw new Error(result.errors?.[0] || 'Receipt extraction failed.');
+    const snippet = String(rawText || '').replace(/\s+/g, ' ').slice(0, 240);
+    throw new Error(`${result.errors?.[0] || 'Receipt extraction failed.'}${snippet ? ` Provider returned: "${snippet}"` : ''}`);
   }
   return result;
 }

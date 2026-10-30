@@ -4,7 +4,7 @@
 
 const SYSTEM_PROMPT = `You are a precise German supermarket receipt extraction engine.
 
-Read the receipt image and return a single JSON object — nothing else, no prose, no markdown fences.
+Read the receipt image and return a single JSON object — nothing else. No prose, no markdown fences, no reasoning or chain-of-thought. Output the JSON directly as your entire response.
 
 Follow these rules strictly:
 1. Preserve the ORIGINAL German product description exactly as printed in "original". Never replace it with a translation.
@@ -40,14 +40,16 @@ Return JSON with exactly this shape:
   ]
 }`;
 
-export function buildExtractionMessages() {
+/**
+ * Build the extraction messages. An optional `extraInstruction` is appended to
+ * the user text (used by the repair retry to demand strict JSON).
+ */
+export function buildExtractionMessages(extraInstruction) {
+  const text = extraInstruction
+    ? `Extract this supermarket receipt into the JSON structure described.\n\n${extraInstruction}`
+    : 'Extract this supermarket receipt into the JSON structure described.';
   return [
     { role: 'system', content: SYSTEM_PROMPT },
-    {
-      role: 'user',
-      content: [
-        { type: 'text', text: 'Extract this supermarket receipt into the JSON structure described.' },
-      ],
-    },
+    { role: 'user', content: [{ type: 'text', text }] },
   ];
 }

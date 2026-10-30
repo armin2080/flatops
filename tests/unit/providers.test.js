@@ -33,6 +33,17 @@ describe('provider adapters', () => {
     expect(url).toContain('https://api.groq.com/openai/v1/chat/completions');
     const payload = JSON.parse(init.body);
     expect(payload.response_format).toBeUndefined();
+    expect(payload.max_completion_tokens).toBe(16384);
+  });
+
+  it('Groq adapter appends a repair instruction when passed', async () => {
+    const fn = fakeFetch(body());
+    await groqExtract(fn, settings, 'AAAA', 'image/jpeg', 'Return only JSON.');
+    const [, init] = fn.mock.calls[0];
+    const payload = JSON.parse(init.body);
+    const last = payload.messages[payload.messages.length - 1];
+    const text = last.content.find((c) => c.type === 'text');
+    expect(text.text).toContain('Return only JSON.');
   });
 
   it('Groq adapter attaches the image as a data URL', async () => {

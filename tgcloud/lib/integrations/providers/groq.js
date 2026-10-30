@@ -20,7 +20,7 @@ export const GROQ_DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1';
  * @param {string} imageBase64 base64-encoded image bytes.
  * @param {string} mimeType image mime type (e.g. "image/jpeg").
  */
-export async function extractReceiptText(fetchImpl, settings, imageBase64, mimeType) {
+export async function extractReceiptText(fetchImpl, settings, imageBase64, mimeType, extraInstruction) {
   const apiKey = settings.aiApiKey;
   if (!apiKey) {
     throw new Error('No AI provider key configured. Use /setkey from the admin account.');
@@ -28,11 +28,13 @@ export async function extractReceiptText(fetchImpl, settings, imageBase64, mimeT
   const model = settings.aiModel || 'qwen/qwen3.8-27b';
   const baseUrl = (settings.aiBaseUrl || GROQ_DEFAULT_BASE_URL).replace(/\/+$/, '');
 
-  const messages = buildExtractionMessages();
+  const messages = buildExtractionMessages(extraInstruction);
   messages[messages.length - 1].content.push({
     type: 'image_url',
     image_url: { url: `data:${mimeType};base64,${imageBase64}` },
   });
 
-  return callChatCompletion(fetchImpl, { apiKey, model, baseUrl, messages, includeJsonMode: false });
+  // Long receipts (20+ lines) can exceed a provider's default output token
+  // budget and get truncated mid-JSON. Allow generous headroom.
+  return callChatCompletion(fetchImpl, { apiKey, model, baseUrl, messages, includeJsonMode: false, maxCompletionTokens: 16384 });
 }

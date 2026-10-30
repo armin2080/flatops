@@ -21,4 +21,14 @@ describe('parseModelOutput', () => {
     expect(parseModelOutput(null)).toBeNull();
     expect(parseModelOutput('')).toBeNull();
   });
+
+  it('extracts JSON embedded in leading reasoning text', () => {
+    const text = 'Let me analyze the receipt. The structured result follows: {"store":"Netto","items":[{"original":"Milch"}]}';
+    expect(parseModelOutput(text)).toEqual({ store: 'Netto', items: [{ original: 'Milch' }] });
+  });
+
+  it('repairs trailing commas', () => {
+    const text = '{"store":"Netto","total":"46,38",}';
+    expect(parseModelOutput(text)).toEqual({ store: 'Netto', total: '46,38' });
+  });
 });
