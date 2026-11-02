@@ -69,6 +69,7 @@ export const receiptItems = table('receipt_items', {
   unit: text('unit'),
   unitPriceCents: integer('unit_price_cents'),
   lineTotalCents: integer('line_total_cents').notNull(),
+  category: text('category'),
   allocationType: text('allocation_type').notNull().default('shared'),
   allocationACents: integer('allocation_a_cents'),
   confidence: real('confidence'),
@@ -91,6 +92,22 @@ export const adjustments = table('adjustments', {
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 }, (t) => ({
   receiptIdx: index('idx_adjustments_receipt').on(t.receiptId),
+}));
+
+// --- Shopping list --------------------------------------------------------
+// A single shared checklist. Items are checked off by whichever participant is
+// shopping; checked items are cleared to start the next week.
+export const shoppingItems = table('shopping_items', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  text: text('text').notNull(),
+  checked: boolean('checked').notNull().default(false),
+  addedBy: integer('added_by'),
+  checkedBy: integer('checked_by'),
+  position: integer('position').notNull().default(0),
+  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+  checkedAt: integer('checked_at'),
+}, (t) => ({
+  checkedIdx: index('idx_shopping_checked').on(t.checked),
 }));
 
 // --- Settlements ----------------------------------------------------------

@@ -2,6 +2,10 @@
 // instructed to return ONLY JSON, in a fixed schema, following the recognition
 // rules required by FlatOps.
 
+import { CATEGORIES } from '../analytics/categories.js';
+
+const CATEGORY_LIST = CATEGORIES.map((c) => `"${c.id}" (${c.label})`).join(', ');
+
 const SYSTEM_PROMPT = `You are a precise German supermarket receipt extraction engine.
 
 Read the receipt image and return a single JSON object — nothing else. No prose, no markdown fences, no reasoning or chain-of-thought. Output the JSON directly as your entire response.
@@ -17,6 +21,7 @@ Follow these rules strictly:
 8. Do NOT invent products, quantities, prices, or dates. If something is unreadable, omit it or mark it with low confidence.
 9. Treat discounts (Rabatt), refundable deposits (Pfand), and other receipt-level charges as entries in "adjustments" with a "kind" of "discount", "pfand", or "refund", and a signed "amount" (negative for discounts/refunds). Do not treat them as products.
 10. Use "total" for the receipt's printed grand total.
+11. For each item, set "category" to exactly ONE of these ids (pick the best fit): ${CATEGORY_LIST}. If genuinely unsure, use "other".
 
 Return JSON with exactly this shape:
 {
@@ -32,6 +37,7 @@ Return JSON with exactly this shape:
       "unit": string | null,
       "unit_price": string | null,
       "line_total": string,
+      "category": string,
       "confidence": number
     }
   ],

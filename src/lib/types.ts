@@ -18,6 +18,7 @@ export interface ReceiptItem {
   unit: string;
   unitPriceCents: number | null;
   lineTotalCents: number;
+  category: string;
   confidence: number | null;
   isUncertain: boolean;
   allocationType: string;
@@ -26,6 +27,12 @@ export interface ReceiptItem {
   suggestedACents: number | null;
   splitA: number;
   splitB: number;
+}
+
+export interface Category {
+  id: string;
+  label: string;
+  emoji: string;
 }
 
 export interface Adjustment {
@@ -69,6 +76,7 @@ export interface ReceiptView {
   items: ReceiptItem[];
   adjustments: Adjustment[];
   participants: Participant[];
+  categories: Category[];
   totals: {
     respA: number;
     respB: number;
@@ -110,4 +118,37 @@ export interface HistoryPayload {
     amountCents: number;
     note: string | null;
   }>;
+}
+
+export interface ShoppingItem {
+  id: number;
+  text: string;
+  checked: boolean;
+  addedBy: number | null;
+  addedByName: string | null;
+  checkedBy: number | null;
+  checkedByName: string | null;
+  position: number;
+  createdAt: number;
+  checkedAt: number | null;
+}
+
+export interface ShoppingListPayload {
+  items: ShoppingItem[];
+  remaining: number;
+  done: number;
+}
+
+export interface AnalyticsPayload {
+  categories: Category[];
+  month: string | null;
+  availableMonths: string[];
+  totalCents: number;
+  nameA: string;
+  nameB: string;
+  aShareCents: number;
+  bShareCents: number;
+  byCategory: Record<string, number>;
+  aShareByCategory: Record<string, number>;
+  bShareByCategory: Record<string, number>;
 }

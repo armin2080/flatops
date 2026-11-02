@@ -12,6 +12,7 @@ import { splitCents, normalizeAllocationType, ALLOC_CUSTOM } from '../allocation
 import { suggestAllocation, buildPreferenceMap, preferenceRowFromAllocation } from '../allocation/preferences.js';
 import { receiptResponsibility, computeBalance } from '../ledger/ledger.js';
 import { calculatedTotalCents, discrepancyCents } from '../receipts/reconcile.js';
+import { normalizeCategory, categoryList } from '../analytics/categories.js';
 import { getOrderedParticipants } from '../security/auth.js';
 import { getSettlements } from './balance.js';
 
@@ -81,6 +82,7 @@ export async function loadReceiptView(receiptId) {
       unit: it.unit,
       unitPriceCents: it.unitPriceCents,
       lineTotalCents: it.lineTotalCents,
+      category: it.category || 'other',
       confidence: it.confidence,
       isUncertain: Boolean(it.isUncertain),
       allocationType: it.allocationType,
@@ -144,6 +146,7 @@ export async function loadReceiptView(receiptId) {
     },
     items: itemsView,
     adjustments: adjsView,
+    categories: categoryList(),
     participants,
     totals: {
       respA,
@@ -160,23 +163,18 @@ export async function loadReceiptView(receiptId) {
   };
 }
 
-function assertEditable(status) {
-  if (status === STATUS.CONFIRMED) {
-    throw new EndpointError('This receipt is already confirmed and cannot be edited.', { code: 'ALREADY_CONFIRMED' });
-  }
-  if (status === STATUS.CANCELLED) {
-    throw new EndpointError('This receipt has been cancelled.', { code: 'CANCELLED' });
-  }
-}
-
 /**
  * Validate and persist a draft of a receipt (items, adjustments, metadata).
  * Returns the fresh view.
+ *
+ * Confirmed receipts can be edited: saving resets them to "awaiting_review" so
+ * the balance drops them until they are explicitly re-confirmed. This lets
+ * users fix mistakes after the fact without breaking the ledger invariants
+ * (the balance is always recomputed from confirmed receipts, never stored).
  */
 export async function saveReceiptDraft(receiptId, draft) {
   const receipt = await db.select().from(receipts).where(eq(receipts.id, receiptId)).get();
   if (!receipt) throw new EndpointError('Receipt not found.', { code: 'NOT_FOUND' });
-  assertEditable(receipt.status);
 
   const store = typeof draft.store === 'string' ? draft.store.trim().slice(0, 200) : '';
   const date = typeof draft.date === 'string' ? draft.date.trim().slice(0, 32) : '';
@@ -201,6 +199,7 @@ export async function saveReceiptDraft(receiptId, draft) {
       unit: typeof it.unit === 'string' ? it.unit.trim().slice(0, 40) : '',
       unitPriceCents: it.unitPriceCents == null || it.unitPriceCents === '' ? null : Math.round(Number(it.unitPriceCents)),
       lineTotalCents,
+      category: normalizeCategory(it.category) || 'other',
       confidence: it.confidence == null || it.confidence === '' ? null : Math.max(0, Math.min(1, Number(it.confidence))),
       isUncertain: Boolean(it.isUncertain),
       allocationType: type,
@@ -228,9 +227,21 @@ export async function saveReceiptDraft(receiptId, draft) {
   const calc = calculatedTotalCents(items, adjs);
   const disc = printedTotalCents - calc;
 
-  // Persist metadata.
+  // Persist metadata. Saving a draft always puts the receipt back into
+  // "awaiting_review" (un-confirming it if it was confirmed), so a receipt only
+  // affects the balance while explicitly confirmed.
   await db.update(receipts)
-    .set({ store, purchaseDate: date, currency, payerId, printedTotalCents, calculatedTotalCents: calc, discrepancyCents: disc })
+    .set({
+      store,
+      purchaseDate: date,
+      currency,
+      payerId,
+      printedTotalCents,
+      calculatedTotalCents: calc,
+      discrepancyCents: disc,
+      status: STATUS.AWAITING_REVIEW,
+      confirmedAt: null,
+    })
     .where(eq(receipts.id, receiptId))
     .run();
 
@@ -333,9 +344,8 @@ export async function confirmReceipt(receiptId) {
 export async function cancelReceipt(receiptId) {
   const receipt = await db.select().from(receipts).where(eq(receipts.id, receiptId)).get();
   if (!receipt) throw new EndpointError('Receipt not found.', { code: 'NOT_FOUND' });
-  if (receipt.status === STATUS.CONFIRMED) {
-    throw new EndpointError('A confirmed receipt cannot be cancelled.', { code: 'ALREADY_CONFIRMED' });
-  }
+  // Confirmed receipts can be cancelled too: the balance is recomputed on read,
+  // so a cancelled (or re-cancelled) receipt immediately drops out of it.
   await db.update(receipts).set({ status: STATUS.CANCELLED }).where(eq(receipts.id, receiptId)).run();
   return { receiptId, status: STATUS.CANCELLED };
 }
@@ -343,20 +353,14 @@ export async function cancelReceipt(receiptId) {
 /**
  * Permanently delete a receipt and its items/adjustments.
  *
- * Confirmed receipts are immutable for audit — they affect the balance and must
- * never be silently removed. To correct a confirmed entry, record a settlement.
- * Non-confirmed receipts (processing, awaiting_review, cancelled, failed) never
- * affect the balance, so deleting them is safe.
+ * The balance is always recomputed from confirmed receipts on read, so deleting
+ * a confirmed receipt correctly removes it from the ledger. To correct a
+ * confirmed entry you may prefer "cancel" (which keeps an audit trail), but a
+ * hard delete is permitted for genuine mistakes.
  */
 export async function removeReceipt(receiptId) {
   const receipt = await db.select().from(receipts).where(eq(receipts.id, receiptId)).get();
   if (!receipt) throw new EndpointError('Receipt not found.', { code: 'NOT_FOUND' });
-  if (receipt.status === STATUS.CONFIRMED) {
-    throw new EndpointError(
-      'A confirmed receipt cannot be removed. Record a settlement instead to adjust the balance.',
-      { code: 'ALREADY_CONFIRMED' },
-    );
-  }
   // Children first (no foreign keys — integrity enforced in app code).
   await db.delete(receiptItems).where(eq(receiptItems.receiptId, receiptId)).run();
   await db.delete(adjustments).where(eq(adjustments.receiptId, receiptId)).run();

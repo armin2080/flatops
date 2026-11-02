@@ -8,11 +8,12 @@ interface Props {
   nameA: string;
   nameB: string;
   onBack?: () => void;
+  onEdit?: () => void;
   onHome: () => void;
   alreadyConfirmed?: boolean;
 }
 
-export default function ConfirmReceipt({ view, nameA, nameB, onBack, onHome, alreadyConfirmed }: Props) {
+export default function ConfirmReceipt({ view, nameA, nameB, onBack, onEdit, onHome, alreadyConfirmed }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ balance: number; alreadyConfirmed: boolean } | null>(null);
@@ -62,7 +63,12 @@ export default function ConfirmReceipt({ view, nameA, nameB, onBack, onHome, alr
         <span />
       </header>
 
-      {alreadyConfirmed && <div className="banner banner--warn">This receipt is already confirmed.</div>}
+      {alreadyConfirmed && (
+        <div className="banner banner--warn">
+          This receipt is confirmed. You can edit it — editing will un-confirm it
+          until you confirm again.
+        </div>
+      )}
 
       <section className="card">
         <div className="kv"><span>Store</span><strong>{view.receipt.store || '—'}</strong></div>
@@ -93,13 +99,19 @@ export default function ConfirmReceipt({ view, nameA, nameB, onBack, onHome, alr
       {error && <div className="banner banner--error">{error}</div>}
 
       <footer className="footer">
-        <button
-          className="btn btn--primary btn--block"
-          disabled={busy || !reconciled}
-          onClick={runConfirm}
-        >
-          {busy ? 'Confirming…' : '✅ Confirm receipt'}
-        </button>
+        {alreadyConfirmed ? (
+          <button className="btn btn--primary btn--block" onClick={onEdit}>
+            ✏️ Edit receipt
+          </button>
+        ) : (
+          <button
+            className="btn btn--primary btn--block"
+            disabled={busy || !reconciled}
+            onClick={runConfirm}
+          >
+            {busy ? 'Confirming…' : '✅ Confirm receipt'}
+          </button>
+        )}
       </footer>
     </div>
   );

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import ReviewReceipt from './pages/ReviewReceipt';
 import BalanceView from './pages/BalanceView';
 import SetupView from './pages/SetupView';
+import ShoppingList from './pages/ShoppingList';
+import Analytics from './pages/Analytics';
 import { initTelegram, isTelegram } from './lib/telegram';
 
 interface Route {
@@ -34,6 +36,9 @@ export default function App() {
   const goHome = () => navigate({});
   const goBalance = () => navigate({ view: 'balance' });
   const goSetup = () => navigate({ view: 'setup' });
+  const goShopping = () => navigate({ view: 'shopping' });
+  const goAnalytics = () => navigate({ view: 'analytics' });
+  const goReceipt = (id: number) => navigate({ receiptId: id });
 
   if (!isTelegram()) {
     return (
@@ -47,7 +52,9 @@ export default function App() {
   }
 
   if (route.receiptId) return <ReviewReceipt receiptId={route.receiptId} onHome={goHome} />;
-  if (route.view === 'balance') return <BalanceView onBack={goHome} />;
+  if (route.view === 'balance') return <BalanceView onBack={goHome} onOpenReceipt={goReceipt} />;
+  if (route.view === 'shopping') return <ShoppingList onBack={goHome} />;
+  if (route.view === 'analytics') return <Analytics onBack={goHome} />;
   if (route.view === 'setup') return <SetupView onDone={goHome} />;
 
   return (
@@ -62,12 +69,18 @@ export default function App() {
         <button className="btn btn--primary btn--block" onClick={goBalance}>
           💰 View balance & history
         </button>
+        <button className="btn btn--primary btn--block" onClick={goShopping}>
+          🛒 Shopping list
+        </button>
+        <button className="btn btn--primary btn--block" onClick={goAnalytics}>
+          📊 Spending analytics
+        </button>
         <button className="btn btn--ghost btn--block" onClick={goSetup}>
           🔐 First-time setup
         </button>
         <p className="muted small center">
-          Send a receipt photo to the bot in Telegram to start. The "Review
-          receipt" button opens this app.
+          Send a receipt photo to the bot in Telegram to start. The &ldquo;Review
+          receipt&rdquo; button opens this app.
         </p>
       </div>
     </div>

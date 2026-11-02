@@ -101,6 +101,7 @@ export async function processReceiptImage(receiptId, providedBytes, mimeType) {
       unit: it.unit,
       unitPriceCents: it.unitPriceCents,
       lineTotalCents: it.lineTotalCents,
+      category: it.category || 'other',
       confidence: it.confidence,
       isUncertain: it.isUncertain,
       allocationType: 'shared',

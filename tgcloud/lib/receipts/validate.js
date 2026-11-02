@@ -6,6 +6,7 @@
 // uncertain fields for human review, and separating unit price from line total.
 
 import { parseMoneyToCents, normalizeCurrency } from '../money.js';
+import { normalizeCategory, categorizeItem } from '../analytics/categories.js';
 
 const KNOWN_UNITS = new Set([
   'kg', 'g', 'l', 'ml', 'cl', 'stück', 'stk', 'st', 'pcs', 'pack', 'x', 'flasche',
@@ -129,6 +130,7 @@ export function normalizeExtraction(raw) {
       unit,
       unitPriceCents,
       lineTotalCents: lineTotalCents === null ? 0 : lineTotalCents,
+      category: normalizeCategory(it.category) || categorizeItem(original, english),
       confidence,
       isUncertain,
     });

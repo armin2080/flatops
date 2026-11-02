@@ -1,4 +1,4 @@
-import type { ReceiptItem } from '../lib/types';
+import type { ReceiptItem, Category } from '../lib/types';
 import AllocationPicker from './AllocationPicker';
 
 interface Props {
@@ -6,11 +6,12 @@ interface Props {
   index: number;
   nameA: string;
   nameB: string;
+  categories: Category[];
   onChange: (item: ReceiptItem) => void;
   onDelete: () => void;
 }
 
-export default function ItemCard({ item, index, nameA, nameB, onChange, onDelete }: Props) {
+export default function ItemCard({ item, index, nameA, nameB, categories, onChange, onDelete }: Props) {
   const patch = (p: Partial<ReceiptItem>) => onChange({ ...item, ...p });
 
   return (
@@ -59,6 +60,17 @@ export default function ItemCard({ item, index, nameA, nameB, onChange, onDelete
           />
         </label>
         <label className="field">
+          <span className="field__label">Category</span>
+          <select className="input" value={item.category || 'other'} onChange={(e) => patch({ category: e.target.value })}>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="grid grid--2">
+        <label className="field">
           <span className="field__label">Unit price</span>
           <input
             className="input"
@@ -72,9 +84,6 @@ export default function ItemCard({ item, index, nameA, nameB, onChange, onDelete
             placeholder="—"
           />
         </label>
-      </div>
-
-      <div className="card__line-total">
         <label className="field">
           <span className="field__label">Line total</span>
           <input

@@ -49,6 +49,14 @@ and https://blogfork.telegram.org/bots/serverless.
 - See `docs/financial-model.md` for the sign convention and invariants. Do not
   change allocation rounding or the balance formula without updating that doc
   and the tests in `tests/unit/ledger.test.js` / `allocation.test.js`.
+- The balance is **always recomputed on read** from confirmed receipts +
+  settlements (never stored incrementally). This is what makes editing,
+  cancelling, or removing a confirmed receipt safe: saving a draft sets it back
+  to `awaiting_review`, and cancelling/removing simply drop it out of the next
+  balance computation.
+- Spending **categories** are defined in `tgcloud/lib/analytics/categories.js`
+  (a single canonical list). The frontend fetches them from the backend rather
+  than duplicating them.
 
 ## Secrets
 

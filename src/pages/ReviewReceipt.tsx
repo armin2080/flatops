@@ -98,9 +98,7 @@ export default function ReviewReceipt({ receiptId, onHome }: Props) {
   if (error) return <div className="center"><p className="error">{error}</p><button className="btn" onClick={onHome}>Home</button></div>;
   if (!view) return null;
 
-  if (view.receipt.status === 'confirmed') {
-    return <ConfirmReceipt view={view} nameA={nameA} nameB={nameB} onHome={onHome} alreadyConfirmed />;
-  }
+  const isConfirmed = view.receipt.status === 'confirmed';
 
   const updateItem = (i: number, item: ReceiptItem) => {
     setItems((prev) => prev.map((it, idx) => (idx === i ? item : it)));
@@ -117,6 +115,7 @@ export default function ReviewReceipt({ receiptId, onHome }: Props) {
         unit: '',
         unitPriceCents: null,
         lineTotalCents: 0,
+        category: 'other',
         confidence: null,
         isUncertain: false,
         allocationType: 'shared',
@@ -187,6 +186,8 @@ export default function ReviewReceipt({ receiptId, onHome }: Props) {
       <ConfirmReceipt
         view={view}
         nameA={nameA}
+        alreadyConfirmed={isConfirmed}
+        onEdit={() => setStep('review')}
         nameB={nameB}
         onBack={() => setStep('review')}
         onHome={onHome}
@@ -250,6 +251,7 @@ export default function ReviewReceipt({ receiptId, onHome }: Props) {
             key={`${it.id ?? 'new'}-${i}`}
             item={it}
             index={i}
+            categories={view.categories || []}
             nameA={nameA}
             nameB={nameB}
             onChange={(updated) => updateItem(i, updated)}

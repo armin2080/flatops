@@ -5,9 +5,10 @@ import { formatCents, parseCents } from '../lib/money';
 
 interface Props {
   onBack: () => void;
+  onOpenReceipt: (id: number) => void;
 }
 
-export default function BalanceView({ onBack }: Props) {
+export default function BalanceView({ onBack, onOpenReceipt }: Props) {
   const [balance, setBalance] = useState<BalanceViewPayload | null>(null);
   const [history, setHistory] = useState<HistoryPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,8 +37,11 @@ export default function BalanceView({ onBack }: Props) {
     };
   }, []);
 
-  const onRemove = async (id: number) => {
-    if (!window.confirm('Permanently remove this receipt?')) return;
+  const onRemove = async (id: number, confirmed: boolean) => {
+    const msg = confirmed
+      ? 'Remove this confirmed receipt? It will be deleted and taken out of the balance.'
+      : 'Permanently remove this receipt?';
+    if (!window.confirm(msg)) return;
     setBusy(true);
     setError(null);
     try {
@@ -101,24 +105,31 @@ export default function BalanceView({ onBack }: Props) {
             <div className="kv" key={r.id}>
               <span className={r.status === 'confirmed' ? '' : 'muted'}>
                 {r.status === 'confirmed' ? '✅' : r.status === 'awaiting_review' ? '👀' : r.status === 'cancelled' ? '❌' : '⏳'} {r.store || 'Receipt'}
+                <span className="muted small"> · {formatCents(r.printedTotalCents)}</span>
               </span>
-              {r.status !== 'confirmed' ? (
+              <span className="row-actions">
+                <button
+                  className="icon-btn icon-btn--edit"
+                  onClick={() => onOpenReceipt(r.id)}
+                  aria-label="Open receipt"
+                  title="Open / edit"
+                >
+                  ✏️
+                </button>
                 <button
                   className="icon-btn"
                   disabled={busy}
-                  onClick={() => onRemove(r.id)}
+                  onClick={() => onRemove(r.id, r.status === 'confirmed')}
                   aria-label="Remove receipt"
                   title="Remove"
                 >
                   🗑
                 </button>
-              ) : (
-                <strong>{formatCents(r.printedTotalCents)}</strong>
-              )}
+              </span>
             </div>
           ))
         )}
-        <p className="muted small">Confirmed receipts are permanent — use "Record settlement" to adjust the balance.</p>
+        <p className="muted small">✏️ opens a receipt to review or edit it. 🗑 removes it (confirmed receipts are taken out of the balance).</p>
       </section>
 
       <section className="card">

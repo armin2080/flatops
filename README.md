@@ -18,16 +18,20 @@ Two roommates who shop together (and who read German receipts with difficulty)
 can:
 
 1. **Snap a photo** of a supermarket receipt and send it to the bot.
-2. Have every line **recognised, extracted and translated** (German → English)
-   by a vision-capable AI/OCR provider.
+2. Have every line **recognised, extracted, translated** (German → English) and
+   **auto-categorised** by a vision-capable AI/OCR provider.
 3. **Review and correct** the result in a mobile-first Telegram Mini App.
 4. **Allocate** each item — shared, Person A, Person B, or a custom split.
 5. **Confirm** the receipt, which then flows into a persistent, running
    **financial ledger**.
 6. **Record settlements** (off-platform transfers) to settle up.
+7. Share a **shopping list** checklist between the two of you.
+8. See **monthly analytics** — what you spend, on what, and each person's share.
 
 The receipt is reconciled against its printed total, duplicate uploads are
-detected, and unconfirmed receipts never affect the balance.
+detected, and unconfirmed receipts never affect the balance. Confirmed receipts
+can still be **edited, cancelled, or removed** (the balance is always recomputed
+from confirmed receipts, so correcting a mistake is safe).
 
 ---
 

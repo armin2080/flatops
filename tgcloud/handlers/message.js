@@ -16,6 +16,7 @@ import { config, loadPublicSettings, loadSettings } from '../lib/security/config
 import { processNewReceipt, processReceiptImage } from '../lib/receipts/process.js';
 import { currentBalance, removeReceipt } from '../lib/store/receipts.js';
 import { recentReceipts, recentSettlements, participantNameMap } from '../lib/store/balance.js';
+import { getShoppingList, addShoppingItems } from '../lib/store/shopping.js';
 import { deliverResult } from '../lib/bot/render.js';
 import { listModels, isLikelyVision } from '../lib/integrations/models.js';
 
@@ -29,7 +30,9 @@ Commands:
 /balance — current balance
 /history — recent receipts & settlements
 /settle — record a payment between you
-/remove <id> — permanently remove a non-confirmed receipt
+/list — view the shared shopping list
+/add <items> — add item(s) to the shopping list (comma-separated)
+/remove <id> — permanently remove a receipt
 /cancel — cancel the current operation
 /whoami — your Telegram user id
 /help — this message`;
@@ -94,6 +97,10 @@ async function handleCommand(message, chatId, from, tgId) {
       return handleHistory(chatId, tgId);
     case '/settle':
       return handleSettleStart(chatId, tgId);
+    case '/list':
+      return handleList(chatId, tgId);
+    case '/add':
+      return handleAdd(chatId, tgId, arg);
     case '/remove':
       return handleRemove(chatId, tgId, arg);
     case '/cancel':
@@ -265,6 +272,36 @@ async function handleRemove(chatId, tgId, arg) {
   } catch (e) {
     const msg = e && e.message ? e.message : 'unknown error';
     await api.sendMessage({ chat_id: chatId, text: `Could not remove receipt #${id}: ${msg}` });
+  }
+}
+
+async function handleList(chatId, tgId) {
+  const p = await requireParticipant(tgId, chatId);
+  if (!p) return;
+  const list = await getShoppingList();
+  if (list.items.length === 0) {
+    await api.sendMessage({ chat_id: chatId, text: '🛒 Your shopping list is empty.\n\nAdd items with /add milk, eggs, bread — or open the Mini App for an interactive checklist.' });
+    return;
+  }
+  const lines = list.items.map((it) => (it.checked ? '✅' : '⬜') + ' ' + it.text);
+  const summary = `🛒 Shopping list (${list.remaining} to get, ${list.done} done)`;
+  await api.sendMessage({ chat_id: chatId, text: [summary, '', ...lines].join('\n') });
+}
+
+async function handleAdd(chatId, tgId, arg) {
+  const p = await requireParticipant(tgId, chatId);
+  if (!p) return;
+  if (!arg) {
+    await api.sendMessage({ chat_id: chatId, text: 'Usage: /add <item> — or several, comma-separated: /add milk, eggs, bread' });
+    return;
+  }
+  const texts = arg.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+  try {
+    const list = await addShoppingItems(texts, p.id);
+    const added = texts.join(', ');
+    await api.sendMessage({ chat_id: chatId, text: `✅ Added: ${added}\n\n${list.remaining} item(s) to get. Check them off in the Mini App.` });
+  } catch (e) {
+    await api.sendMessage({ chat_id: chatId, text: `Could not add items: ${e && e.message ? e.message : e}` });
   }
 }
 

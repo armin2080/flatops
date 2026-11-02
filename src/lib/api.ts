@@ -3,6 +3,7 @@
 import { serverlessCall } from './telegram';
 import type {
   ReceiptView, BalanceViewPayload, HistoryPayload, Participant, ReceiptItem, Adjustment,
+  ShoppingListPayload, AnalyticsPayload,
 } from './types';
 
 export function getReceipt(receiptId: number): Promise<ReceiptView> {
@@ -59,4 +60,24 @@ export function getParticipants(): Promise<Participant[]> {
 
 export function adminBootstrap(setupCode: string): Promise<{ configured: boolean; already: boolean }> {
   return serverlessCall('adminBootstrap', { setupCode });
+}
+
+export function getShoppingList(): Promise<ShoppingListPayload> {
+  return serverlessCall<ShoppingListPayload>('getShoppingList', {});
+}
+
+export function addShoppingItems(texts: string[]): Promise<ShoppingListPayload> {
+  return serverlessCall<ShoppingListPayload>('addShoppingItem', { texts });
+}
+
+export function updateShoppingItem(itemId: number, action: 'toggle' | 'edit' | 'delete', text?: string): Promise<ShoppingListPayload> {
+  return serverlessCall<ShoppingListPayload>('updateShoppingItem', { itemId, action, text });
+}
+
+export function clearShoppingList(all = false): Promise<ShoppingListPayload> {
+  return serverlessCall<ShoppingListPayload>('clearShoppingList', { all });
+}
+
+export function getAnalytics(month?: string): Promise<AnalyticsPayload> {
+  return serverlessCall<AnalyticsPayload>('getAnalytics', { month });
 }

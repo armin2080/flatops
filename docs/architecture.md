@@ -21,7 +21,9 @@ tgcloud/
 │  ├─ getHistory.js
 │  ├─ getParticipants.js
 │  ├─ getSettings.js              # admin-only non-secret config
-│  └─ adminBootstrap.js           # one-time setup-code seeding
+│  ├─ adminBootstrap.js           # one-time setup-code seeding
+│  ├─ getShoppingList.js / addShoppingItem.js / updateShoppingItem.js / clearShoppingList.js
+│  └─ getAnalytics.js             # monthly spending breakdown
 └─ lib/
    ├─ money.js                    # parse/format German money → cents (pure)
    ├─ allocation/
@@ -29,6 +31,9 @@ tgcloud/
    │  └─ preferences.js           # remember allocation decisions (pure)
    ├─ ledger/
    │  └─ ledger.js                # responsibilities + balance (pure)
+   ├─ analytics/
+   │  ├─ categories.js            # canonical categories + keyword categoriser (pure)
+   │  └─ analytics.js             # monthly aggregation (pure)
    ├─ receipts/
    │  ├─ fingerprint.js           # content hashing for dedupe (pure)
    │  ├─ parse.js                 # extract JSON from model text (pure)
@@ -46,7 +51,9 @@ tgcloud/
    │  └─ config.js                # settings table (incl. secrets)
    ├─ store/
    │  ├─ receipts.js              # receipt DB access + confirm/balance
-   │  └─ balance.js               # history + settlement queries
+   │  ├─ balance.js               # history + settlement queries
+   │  ├─ shopping.js              # shopping list DB access
+   │  └─ analytics.js             # analytics assembly
    └─ bot/
       └─ render.js                # shared reply/keyboard rendering
 ```
