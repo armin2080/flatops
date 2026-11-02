@@ -17,6 +17,13 @@ function readRoute(): Route {
   return { receiptId: rid ? Number(rid) : null, view: q.get('view') };
 }
 
+const TABS = [
+  { key: null, label: 'Home', icon: '🏠' },
+  { key: 'balance', label: 'Balance', icon: '💰' },
+  { key: 'shopping', label: 'List', icon: '🛒' },
+  { key: 'analytics', label: 'Stats', icon: '📊' },
+] as const;
+
 export default function App() {
   const [route, setRoute] = useState<Route>(() => readRoute());
 
@@ -34,10 +41,7 @@ export default function App() {
   };
 
   const goHome = () => navigate({});
-  const goBalance = () => navigate({ view: 'balance' });
-  const goSetup = () => navigate({ view: 'setup' });
-  const goShopping = () => navigate({ view: 'shopping' });
-  const goAnalytics = () => navigate({ view: 'analytics' });
+  const go = (view: string) => navigate({ view });
   const goReceipt = (id: number) => navigate({ receiptId: id });
 
   if (!isTelegram()) {
@@ -51,38 +55,88 @@ export default function App() {
     );
   }
 
-  if (route.receiptId) return <ReviewReceipt receiptId={route.receiptId} onHome={goHome} />;
-  if (route.view === 'balance') return <BalanceView onBack={goHome} onOpenReceipt={goReceipt} />;
-  if (route.view === 'shopping') return <ShoppingList onBack={goHome} />;
-  if (route.view === 'analytics') return <Analytics onBack={goHome} />;
-  if (route.view === 'setup') return <SetupView onDone={goHome} />;
+  const showTabs =
+    !route.receiptId &&
+    (!route.view ||
+      route.view === 'balance' ||
+      route.view === 'shopping' ||
+      route.view === 'analytics');
 
+  let content;
+  if (route.receiptId) {
+    content = <ReviewReceipt receiptId={route.receiptId} onHome={goHome} />;
+  } else if (route.view === 'balance') {
+    content = <BalanceView onBack={goHome} onOpenReceipt={goReceipt} />;
+  } else if (route.view === 'shopping') {
+    content = <ShoppingList onBack={goHome} />;
+  } else if (route.view === 'analytics') {
+    content = <Analytics onBack={goHome} />;
+  } else if (route.view === 'setup') {
+    content = <SetupView onDone={goHome} />;
+  } else {
+    content = <HomeScreen onNavigate={go} onSetup={() => go('setup')} />;
+  }
+
+  return (
+    <div className="app">
+      {content}
+      {showTabs && (
+        <nav className="tab-bar">
+          {TABS.map((t) => (
+            <button
+              key={t.label}
+              type="button"
+              className={`tab ${route.view === t.key ? 'tab--active' : ''}`}
+              onClick={() => (t.key === null ? goHome() : go(t.key))}
+            >
+              <span className="tab__icon">{t.icon}</span>
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+    </div>
+  );
+}
+
+function HomeScreen({ onNavigate, onSetup }: {
+  onNavigate: (view: string) => void;
+  onSetup: () => void;
+}) {
   return (
     <div className="page">
       <header className="page__header">
-        <span />
         <h1 className="brand">FlatOps</h1>
-        <span />
       </header>
-      <p className="muted center">Shared living, simplified.</p>
-      <div className="stack">
-        <button className="btn btn--primary btn--block" onClick={goBalance}>
-          💰 View balance & history
+      <p className="muted">Shared living, simplified.</p>
+
+      <div className="home-grid">
+        <button className="tile" onClick={() => onNavigate('balance')}>
+          <span className="tile__icon">💰</span>
+          <span className="tile__label">Balance</span>
+          <span className="tile__desc">Who owes whom</span>
         </button>
-        <button className="btn btn--primary btn--block" onClick={goShopping}>
-          🛒 Shopping list
+        <button className="tile" onClick={() => onNavigate('shopping')}>
+          <span className="tile__icon">🛒</span>
+          <span className="tile__label">Shopping list</span>
+          <span className="tile__desc">Shared checklist</span>
         </button>
-        <button className="btn btn--primary btn--block" onClick={goAnalytics}>
-          📊 Spending analytics
+        <button className="tile" onClick={() => onNavigate('analytics')}>
+          <span className="tile__icon">📊</span>
+          <span className="tile__label">Analytics</span>
+          <span className="tile__desc">Monthly spend</span>
         </button>
-        <button className="btn btn--ghost btn--block" onClick={goSetup}>
-          🔐 First-time setup
+        <button className="tile tile--ghost" onClick={onSetup}>
+          <span className="tile__icon">🔐</span>
+          <span className="tile__label">Setup</span>
+          <span className="tile__desc">First-time config</span>
         </button>
-        <p className="muted small center">
-          Send a receipt photo to the bot in Telegram to start. The &ldquo;Review
-          receipt&rdquo; button opens this app.
-        </p>
       </div>
+
+      <p className="muted small center home-hint">
+        Send a receipt photo to the bot in Telegram — its &ldquo;Review
+        receipt&rdquo; button opens the editor here.
+      </p>
     </div>
   );
 }

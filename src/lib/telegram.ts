@@ -7,7 +7,10 @@ interface TelegramWebApp {
   expand?: () => void;
   close?: () => void;
   initDataUnsafe?: { user?: { id?: number } };
-  colorScheme?: string;
+  colorScheme?: 'light' | 'dark';
+  themeParams?: Record<string, string>;
+  setHeaderColor?: (color: string) => void;
+  setBackgroundColor?: (color: string) => void;
   Serverless?: {
     call: (name: string, inputOrCb: any, maybeCb?: any) => void;
   };
@@ -67,6 +70,10 @@ export function initTelegram() {
   const wa = getWebApp();
   if (!wa) return;
   try {
+    // Blend the native header into the app background so the app reads as one
+    // surface rather than a "Telegram button" with a mismatched top bar.
+    wa.setHeaderColor?.('bg_color');
+    wa.setBackgroundColor?.('bg_color');
     wa.ready?.();
     wa.expand?.();
   } catch {

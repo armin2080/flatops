@@ -48,11 +48,7 @@ body {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 14px;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
   padding: 10px 0;
-  z-index: 5;
 }
 
 .page__title {
@@ -517,4 +513,93 @@ code {
 
 .icon-btn--edit {
   color: var(--link);
+}
+
+/* --- App shell & bottom tab bar --- */
+.app {
+  min-height: 100vh;
+  padding-top: var(--tg-content-safe-area-inset-top, 0px);
+}
+
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--section-sep);
+  padding-bottom: env(safe-area-inset-bottom);
+  max-width: 640px;
+  margin: 0 auto;
+  z-index: 20;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 6px;
+  background: none;
+  border: none;
+  color: var(--hint);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab__icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.tab--active {
+  color: var(--accent);
+}
+
+/* --- Home tiles --- */
+.home-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  background: var(--bg-secondary);
+  border: 1px solid var(--section-sep);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  color: var(--text);
+  text-align: left;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.tile__icon {
+  font-size: 28px;
+}
+
+.tile__label {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.tile__desc {
+  font-size: 12px;
+  color: var(--hint);
+}
+
+.tile--ghost {
+  background: transparent;
+}
+
+.home-hint {
+  margin-top: 18px;
 }
