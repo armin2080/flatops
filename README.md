@@ -26,7 +26,8 @@ can:
    **financial ledger**.
 6. **Record settlements** (off-platform transfers) to settle up.
 7. Share a **shopping list** checklist between the two of you.
-8. See **monthly analytics** — what you spend, on what, and each person's share.
+8. Define **recurring chores** that rotate whose turn it is and send reminders.
+9. See **monthly analytics** — what you spend, on what, and each person's share.
 
 The receipt is reconciled against its printed total, duplicate uploads are
 detected, and unconfirmed receipts never affect the balance. Confirmed receipts

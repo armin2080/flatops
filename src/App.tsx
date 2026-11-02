@@ -4,6 +4,7 @@ import BalanceView from './pages/BalanceView';
 import SetupView from './pages/SetupView';
 import ShoppingList from './pages/ShoppingList';
 import Analytics from './pages/Analytics';
+import Chores from './pages/Chores';
 import { initTelegram, isTelegram } from './lib/telegram';
 
 interface Route {
@@ -21,6 +22,7 @@ const TABS = [
   { key: null, label: 'Home', icon: '🏠' },
   { key: 'balance', label: 'Balance', icon: '💰' },
   { key: 'shopping', label: 'List', icon: '🛒' },
+  { key: 'chores', label: 'Chores', icon: '🧹' },
   { key: 'analytics', label: 'Stats', icon: '📊' },
 ] as const;
 
@@ -60,6 +62,7 @@ export default function App() {
     (!route.view ||
       route.view === 'balance' ||
       route.view === 'shopping' ||
+      route.view === 'chores' ||
       route.view === 'analytics');
 
   let content;
@@ -69,6 +72,8 @@ export default function App() {
     content = <BalanceView onBack={goHome} onOpenReceipt={goReceipt} />;
   } else if (route.view === 'shopping') {
     content = <ShoppingList onBack={goHome} />;
+  } else if (route.view === 'chores') {
+    content = <Chores onBack={goHome} />;
   } else if (route.view === 'analytics') {
     content = <Analytics onBack={goHome} />;
   } else if (route.view === 'setup') {
@@ -120,6 +125,11 @@ function HomeScreen({ onNavigate, onSetup }: {
           <span className="tile__icon">🛒</span>
           <span className="tile__label">Shopping list</span>
           <span className="tile__desc">Shared checklist</span>
+        </button>
+        <button className="tile" onClick={() => onNavigate('chores')}>
+          <span className="tile__icon">🧹</span>
+          <span className="tile__label">Chores</span>
+          <span className="tile__desc">Rotating routines</span>
         </button>
         <button className="tile" onClick={() => onNavigate('analytics')}>
           <span className="tile__icon">📊</span>

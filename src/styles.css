@@ -515,6 +515,51 @@ code {
   color: var(--link);
 }
 
+/* --- Chores --- */
+.chore {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--section-sep);
+}
+
+.chore:last-child {
+  border-bottom: none;
+}
+
+.chore__main {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+.chore__icon {
+  font-size: 20px;
+}
+
+.chore__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.chore__name {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.chore__done {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.card--form {
+  border: 1px solid var(--accent);
+}
+
 /* --- App shell & bottom tab bar --- */
 .app {
   min-height: 100vh;

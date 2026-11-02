@@ -138,6 +138,35 @@ export const allocationPreferences = table('allocation_preferences', {
   keyIdx: uniqueIndex('uidx_prefs_key').on(t.key),
 }));
 
+// --- Chores (recurring household routines) --------------------------------
+// A chore recurs every `frequencyDays`. The assignee rotates deterministically
+// between the two participants (whoever didn't do it last does it next).
+export const chores = table('chores', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  description: text('description'),
+  frequencyDays: integer('frequency_days').notNull().default(7),
+  advanceDays: integer('advance_days').notNull().default(1),
+  createdBy: integer('created_by'),
+  isActive: boolean('is_active').notNull().default(true),
+  lastCompletedAt: integer('last_completed_at'),
+  lastCompletedBy: integer('last_completed_by'),
+  completedCount: integer('completed_count').notNull().default(0),
+  reminderLevel: integer('reminder_level').notNull().default(0),
+  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+}, (t) => ({
+  activeIdx: index('idx_chores_active').on(t.isActive),
+}));
+
+export const choreCompletions = table('chore_completions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  choreId: integer('chore_id').notNull(),
+  completedBy: integer('completed_by'),
+  completedAt: integer('completed_at').notNull().default(sql`(unixepoch())`),
+}, (t) => ({
+  choreIdx: index('idx_chore_completions_chore').on(t.choreId),
+}));
+
 // --- Settings -------------------------------------------------------------
 // Key/value store for configuration. Secret values (AI API key) live ONLY here,
 // never in source, the frontend, or logs.

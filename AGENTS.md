@@ -57,6 +57,9 @@ and https://blogfork.telegram.org/bots/serverless.
 - Spending **categories** are defined in `tgcloud/lib/analytics/categories.js`
   (a single canonical list). The frontend fetches them from the backend rather
   than duplicating them.
+- **Chores** (recurring routines) live in `tgcloud/lib/chores/` + `store/chores.js`.
+  There is **no cron** on Telegram Serverless — reminders fire lazily, on the next
+  bot interaction (any message or Mini App open). Don't assume a scheduler exists.
 
 ## Secrets
 

@@ -152,3 +152,25 @@ export interface AnalyticsPayload {
   aShareByCategory: Record<string, number>;
   bShareByCategory: Record<string, number>;
 }
+
+export interface Chore {
+  id: number;
+  name: string;
+  description: string | null;
+  frequencyDays: number;
+  frequencyLabel: string;
+  advanceDays: number;
+  isActive: boolean;
+  assigneeId: number | null;
+  assigneeName: string | null;
+  status: 'overdue' | 'due' | 'upcoming' | 'none';
+  nextDueAt: number;
+  lastCompletedAt: number | null;
+  lastCompletedByName: string | null;
+  completedCount: number;
+}
+
+export interface ChoresPayload {
+  items: Chore[];
+  frequencies: number[];
+}

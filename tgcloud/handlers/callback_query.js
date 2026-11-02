@@ -11,6 +11,7 @@ import { processReceiptImage } from '../lib/receipts/process.js';
 import { cancelReceipt } from '../lib/store/receipts.js';
 import { getParticipantByTgId } from '../lib/security/auth.js';
 import { participantNameMap } from '../lib/store/balance.js';
+import { completeChore, listChores } from '../lib/store/chores.js';
 import { deliverResult } from '../lib/bot/render.js';
 
 const now = () => Math.floor(Date.now() / 1000);
@@ -32,6 +33,8 @@ export default async function (callbackQuery) {
       await handleCancelReceipt(chatId, messageId, Number(data.slice(7)), from.id);
     } else if (data.startsWith('settle:')) {
       await handleSettleDirection(chatId, data, from.id);
+    } else if (data.startsWith('chore_done:')) {
+      await handleChoreDone(chatId, messageId, Number(data.slice(11)), from.id);
     }
   } catch (err) {
     console.error('callback handler error', err);
@@ -92,4 +95,15 @@ async function handleSettleDirection(chatId, data, tgId) {
     chat_id: chatId,
     text: `How much did ${sender} pay ${receiver}?\n\nReply with the amount (e.g. 20 or 20,50), or /cancel.`,
   });
+}
+
+async function handleChoreDone(chatId, messageId, choreId, tgId) {
+  const p = await getParticipantByTgId(tgId);
+  if (!p) return;
+  await completeChore(choreId, p.id);
+  const { items } = await listChores();
+  const chore = items.find((c) => c.id === choreId);
+  const name = chore?.name || 'Chore';
+  const next = chore?.assigneeName || 'someone';
+  await edit(chatId, messageId, `✅ ${name} marked done. Next time it's ${next}'s turn.`, undefined);
 }

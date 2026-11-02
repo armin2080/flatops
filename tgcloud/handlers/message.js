@@ -17,6 +17,7 @@ import { processNewReceipt, processReceiptImage } from '../lib/receipts/process.
 import { currentBalance, removeReceipt } from '../lib/store/receipts.js';
 import { recentReceipts, recentSettlements, participantNameMap } from '../lib/store/balance.js';
 import { getShoppingList, addShoppingItems } from '../lib/store/shopping.js';
+import { listChores, evaluateAndRemind } from '../lib/store/chores.js';
 import { deliverResult } from '../lib/bot/render.js';
 import { listModels, isLikelyVision } from '../lib/integrations/models.js';
 
@@ -32,6 +33,7 @@ Commands:
 /settle — record a payment between you
 /list — view the shared shopping list
 /add <items> — add item(s) to the shopping list (comma-separated)
+/chores — view recurring chores and mark them done
 /remove <id> — permanently remove a receipt
 /cancel — cancel the current operation
 /whoami — your Telegram user id
@@ -44,6 +46,9 @@ export default async function (message) {
   const tgId = from.id;
 
   try {
+    // Any interaction is a chance to fire due chore reminders (no cron here).
+    await evaluateAndRemind().catch(() => {});
+
     if (message.text) {
       if (message.text.startsWith('/')) {
         await handleCommand(message, chatId, from, tgId);
@@ -101,6 +106,8 @@ async function handleCommand(message, chatId, from, tgId) {
       return handleList(chatId, tgId);
     case '/add':
       return handleAdd(chatId, tgId, arg);
+    case '/chores':
+      return handleChores(chatId, tgId);
     case '/remove':
       return handleRemove(chatId, tgId, arg);
     case '/cancel':
@@ -303,6 +310,36 @@ async function handleAdd(chatId, tgId, arg) {
   } catch (e) {
     await api.sendMessage({ chat_id: chatId, text: `Could not add items: ${e && e.message ? e.message : e}` });
   }
+}
+
+async function handleChores(chatId, tgId) {
+  const p = await requireParticipant(tgId, chatId);
+  if (!p) return;
+  const { items } = await listChores();
+  if (items.length === 0) {
+    await api.sendMessage({ chat_id: chatId, text: '🧹 No chores yet.\n\nAdd some in the Mini App (🧹 Chores), then I\'ll remind whoever\'s turn it is.' });
+    return;
+  }
+
+  const icon = { overdue: '🔴', due: '🟠', upcoming: '📅', none: '✅' };
+  const lines = items.map((c) => {
+    const status = icon[c.status] || '•';
+    const dueDate = new Date(c.nextDueAt * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const who = c.assigneeName ? ` — ${c.assigneeName}'s turn` : '';
+    return `${status} ${c.name}${c.isActive === false ? ' (paused)' : ''}\n   ${c.frequencyLabel} · next ${dueDate}${who}`;
+  });
+
+  const keyboard = items
+    .filter((c) => c.status === 'due' || c.status === 'overdue')
+    .map((c) => [{ text: `✅ Done: ${c.name}`, callback_data: `chore_done:${c.id}` }]);
+
+  const reply_markup = keyboard.length ? { inline_keyboard: keyboard } : undefined;
+  await api.sendMessage({
+    chat_id: chatId,
+    text: `🧹 *Chores*\n\n${lines.join('\n')}\n\nManage them in the Mini App (🧹 Chores).`,
+    parse_mode: 'Markdown',
+    reply_markup,
+  });
 }
 
 async function handleFreeText(message, chatId, tgId) {
