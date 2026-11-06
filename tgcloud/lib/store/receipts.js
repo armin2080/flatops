@@ -338,7 +338,17 @@ export async function confirmReceipt(receiptId) {
 
   const { a } = await getOrderedParticipants();
   const balance = await currentBalance(a ? a.id : null);
-  return { receiptId, balance, alreadyConfirmed: false };
+  const { respA, respB } = receiptResponsibility(items, adjs);
+  return {
+    receiptId,
+    balance,
+    alreadyConfirmed: false,
+    store: receipt.store,
+    printedTotalCents: receipt.printedTotalCents,
+    currency: receipt.currency,
+    respA,
+    respB,
+  };
 }
 
 export async function cancelReceipt(receiptId) {

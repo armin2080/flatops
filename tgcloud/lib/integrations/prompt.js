@@ -22,6 +22,7 @@ Follow these rules strictly:
 9. Treat discounts (Rabatt), refundable deposits (Pfand), and other receipt-level charges as entries in "adjustments" with a "kind" of "discount", "pfand", or "refund", and a signed "amount" (negative for discounts/refunds). Do not treat them as products.
 10. Use "total" for the receipt's printed grand total.
 11. For each item, set "category" to exactly ONE of these ids (pick the best fit): ${CATEGORY_LIST}. If genuinely unsure, use "other".
+12. German receipts often print the product name on one line and the count on the NEXT, indented line (e.g. "Vollkornbrot" then "2 x 1,79"). Treat that as ONE item: use the product name as "original", the multiplier as "quantity" (2), the unit amount as "unit_price" (1,79), and "line_total" as the multiplied total (3,58). NEVER emit the indented count line as a separate item.
 
 Return JSON with exactly this shape:
 {

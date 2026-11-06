@@ -51,6 +51,45 @@ describe('normalizeExtraction', () => {
     expect(r.ok).toBe(false);
     expect(r.errors.length).toBeGreaterThan(0);
   });
+
+  it('merges an indented count-continuation line into the previous item', () => {
+    const r = normalizeExtraction({
+      store: 'X', total: '3,58',
+      items: [
+        { original: 'Vollkornbrot', english: 'Whole grain bread', line_total: null, quantity: null },
+        { original: '2 x 1,79', english: '2 x 1.79', line_total: '3,58', quantity: '2' },
+      ],
+    });
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0].originalName).toBe('Vollkornbrot');
+    expect(r.items[0].quantity).toBe(2);
+    expect(r.items[0].unitPriceCents).toBe(179);
+    expect(r.items[0].lineTotalCents).toBe(358);
+  });
+
+  it('merges a bare multiplier line (no price) without breaking the total', () => {
+    const r = normalizeExtraction({
+      store: 'X', total: '2,58',
+      items: [
+        { original: 'Butter', english: 'Butter', line_total: '2,58', quantity: null },
+        { original: '2 x', english: '2 x', line_total: '2,58', quantity: '2' },
+      ],
+    });
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0].quantity).toBe(2);
+    expect(r.items[0].lineTotalCents).toBe(258);
+  });
+
+  it('does not merge a real product line that merely contains a number', () => {
+    const r = normalizeExtraction({
+      store: 'X', total: '5,00',
+      items: [
+        { original: 'Milch 3,5%', english: 'Milk 3.5%', line_total: '2,00', quantity: '1' },
+        { original: 'Eier', english: 'Eggs', line_total: '3,00', quantity: '1' },
+      ],
+    });
+    expect(r.items).toHaveLength(2);
+  });
 });
 
 describe('inferAdjustmentKind', () => {

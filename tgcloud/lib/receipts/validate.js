@@ -45,6 +45,52 @@ function normalizeUnit(value) {
   return u;
 }
 
+// German receipts often print a product name on one line and its count on the
+// next, indented line — e.g. "Vollkornbrot" then "2 x 1,79". A vision model may
+// emit that count line as a separate item with no product name. Detect and merge
+// it back into the preceding item.
+const QUANTITY_CONTINUATION_RE = /^\s*(\d+)\s*[x×·*]\s*(\d*[.,]?\d*)?\s*(?:€|EUR)?\s*$/i;
+
+function parseQuantityContinuation(name) {
+  if (typeof name !== 'string') return null;
+  const m = name.trim().match(QUANTITY_CONTINUATION_RE);
+  if (!m) return null;
+  const quantity = parseInt(m[1], 10);
+  if (!Number.isFinite(quantity)) return null;
+  const unitPriceCents = m[2] ? parseMoneyToCents(m[2]) : null;
+  return { quantity, unitPriceCents };
+}
+
+/**
+ * Merge "count continuation" lines into the item above them.
+ */
+function mergeQuantityContinuations(items, warnings) {
+  const merged = [];
+  for (const it of items) {
+    const cont = parseQuantityContinuation(it.originalName);
+    if (cont && merged.length > 0) {
+      const prev = merged[merged.length - 1];
+      if (prev.quantity == null) prev.quantity = cont.quantity;
+      if (prev.unitPriceCents == null && cont.unitPriceCents != null) {
+        prev.unitPriceCents = cont.unitPriceCents;
+      }
+      if (prev.lineTotalCents === 0) {
+        if (Number.isInteger(prev.quantity) && prev.unitPriceCents != null) {
+          prev.lineTotalCents = prev.quantity * prev.unitPriceCents;
+        } else if (it.lineTotalCents > 0) {
+          prev.lineTotalCents = it.lineTotalCents;
+        }
+      }
+      if (cont.quantity > 1) {
+        warnings.push(`Merged a "x${cont.quantity}" count line into "${prev.originalName}".`);
+      }
+      continue;
+    }
+    merged.push(it);
+  }
+  return merged;
+}
+
 /**
  * Infer an adjustment kind from its label and signed amount.
  */
@@ -95,7 +141,7 @@ export function normalizeExtraction(raw) {
 
   const rawItems = Array.isArray(raw.items) ? raw.items : Array.isArray(raw.products) ? raw.products : [];
 
-  const items = [];
+  let items = [];
   for (let i = 0; i < rawItems.length; i++) {
     const it = rawItems[i] || {};
     const original = (typeof it.original === 'string' && it.original.trim()) ||
@@ -135,6 +181,9 @@ export function normalizeExtraction(raw) {
       isUncertain,
     });
   }
+
+  // Re-attach indented count lines (e.g. "2 x 1,79") to the item above.
+  items = mergeQuantityContinuations(items, warnings);
 
   const rawAdjustments = Array.isArray(raw.adjustments)
     ? raw.adjustments
