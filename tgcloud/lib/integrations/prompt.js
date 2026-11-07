@@ -12,9 +12,9 @@ Read the receipt image and return a single JSON object — nothing else. No pros
 
 Follow these rules strictly:
 1. Preserve the ORIGINAL German product description exactly as printed in "original". Never replace it with a translation.
-2. Provide a natural, readable English translation in "english" (not a word-for-word literal).
+2. Provide a SHORT, natural English translation in "english" (2-4 words, not a word-for-word literal).
 3. Extract quantity and unit separately (e.g. quantity "0.5", unit "kg").
-4. Distinguish "unit_price" (price per single unit) from "line_total" (total charged for this line). If only one is printed, use it for "line_total" and leave "unit_price" as null.
+4. Distinguish "unit_price" (price per single unit) from "line_total" (total charged for this line). If only one is printed, use it for "line_total" and leave "unit_price" as null. OMIT "unit_price" entirely when the quantity is 1 or null.
 5. Keep every printed line as its own item. Do NOT merge identical-looking products.
 6. Report money as strings exactly as printed, using a decimal comma where the receipt uses one (e.g. "2,49"). Do not convert to another format.
 7. Set "confidence" from 0.0 to 1.0 for each item. Use a low value (e.g. 0.3) for anything you are unsure about, and null only if you have no signal at all.
@@ -23,6 +23,7 @@ Follow these rules strictly:
 10. Use "total" for the receipt's printed grand total.
 11. For each item, set "category" to exactly ONE of these ids (pick the best fit): ${CATEGORY_LIST}. If genuinely unsure, use "other".
 12. German receipts often print the product name on one line and the count on the NEXT, indented line (e.g. "Vollkornbrot" then "2 x 1,79"). Treat that as ONE item: use the product name as "original", the multiplier as "quantity" (2), the unit amount as "unit_price" (1,79), and "line_total" as the multiplied total (3,58). NEVER emit the indented count line as a separate item.
+13. Be as concise as possible while remaining complete: this must fit in a small output budget, so do not repeat words or add commentary.
 
 Return JSON with exactly this shape:
 {

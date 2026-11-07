@@ -14,7 +14,7 @@ export const OPENAI_DEFAULT_BASE_URL = 'https://api.openai.com/v1';
  * which some providers (e.g. Groq's vision models) do not support.
  */
 export async function callChatCompletion(fetchImpl, {
-  apiKey, model, baseUrl, messages, includeJsonMode, maxCompletionTokens,
+  apiKey, model, baseUrl, messages, includeJsonMode, maxTokens,
 }) {
   if (!apiKey) {
     throw new Error('No AI provider key configured. Use /setkey from the admin account.');
@@ -22,7 +22,10 @@ export async function callChatCompletion(fetchImpl, {
 
   const body = { model, messages, temperature: 0 };
   if (includeJsonMode) body.response_format = { type: 'json_object' };
-  if (maxCompletionTokens) body.max_completion_tokens = maxCompletionTokens;
+  // `max_tokens` is the param Groq (and classic OpenAI) honour. Groq's free tier
+  // enforces a small output-tokens-per-minute budget, so a large value here gets
+  // rejected with HTTP 429 ("reduce max_tokens"). We therefore cap it.
+  if (maxTokens) body.max_tokens = maxTokens;
 
   let res;
   try {

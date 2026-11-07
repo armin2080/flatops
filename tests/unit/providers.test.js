@@ -33,7 +33,7 @@ describe('provider adapters', () => {
     expect(url).toContain('https://api.groq.com/openai/v1/chat/completions');
     const payload = JSON.parse(init.body);
     expect(payload.response_format).toBeUndefined();
-    expect(payload.max_completion_tokens).toBe(16384);
+    expect(payload.max_tokens).toBe(1000);
   });
 
   it('Groq adapter appends a repair instruction when passed', async () => {

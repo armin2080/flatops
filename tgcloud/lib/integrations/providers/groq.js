@@ -34,7 +34,9 @@ export async function extractReceiptText(fetchImpl, settings, imageBase64, mimeT
     image_url: { url: `data:${mimeType};base64,${imageBase64}` },
   });
 
-  // Long receipts (20+ lines) can exceed a provider's default output token
-  // budget and get truncated mid-JSON. Allow generous headroom.
-  return callChatCompletion(fetchImpl, { apiKey, model, baseUrl, messages, includeJsonMode: false, maxCompletionTokens: 16384 });
+  // Groq free tier has a small output-tokens-per-minute budget for vision models
+  // (the qwen3.8-27b model enforces ~1000 OTPM). Keep the output cap within it so
+  // requests aren't rejected with HTTP 429, and keep the prompt terse so a normal
+  // receipt's JSON still fits.
+  return callChatCompletion(fetchImpl, { apiKey, model, baseUrl, messages, includeJsonMode: false, maxTokens: 1000 });
 }
