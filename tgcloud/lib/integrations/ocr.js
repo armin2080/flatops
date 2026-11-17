@@ -3,13 +3,14 @@
 // Orchestrates: encode image -> call the configured provider -> parse the JSON
 // -> validate/normalise into a cents-based structure. Providers are swappable
 // through `settings.aiProvider`. Built in: `openai` (OpenAI/Azure/OpenRouter/
-// self-hosted) and `groq` (Groq's OpenAI-compatible endpoint).
+// self-hosted), `groq`, and `academiccloud`.
 
 import { fetch } from 'sdk';
 
 import { bytesToBase64 } from './base64.js';
 import { extractReceiptText as openaiExtract } from './providers/openai.js';
 import { extractReceiptText as groqExtract } from './providers/groq.js';
+import { extractReceiptText as academicCloudExtract } from './providers/academiccloud.js';
 import { parseModelOutput } from '../receipts/parse.js';
 import { normalizeExtraction } from '../receipts/validate.js';
 
@@ -17,6 +18,7 @@ const PROVIDERS = {
   openai: openaiExtract,
   openai_compatible: openaiExtract,
   groq: groqExtract,
+  academiccloud: academicCloudExtract,
 };
 
 /**

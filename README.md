@@ -107,26 +107,41 @@ npm install
 ## Configure the AI provider
 
 The provider key is stored **only** in the bot's database (the `settings` table),
-never in source, the frontend, or logs. Set it from the admin account in
-Telegram:
+never in source, the frontend, or logs.
+
+### Option A — from a local `.env` (recommended)
+
+```bash
+cp .env.example .env     # fill in AI_API_KEY, ADMIN_TG_ID, AI_PROVIDER, AI_MODEL
+npm run set-key          # pushes the values into the bot's settings table
+```
+
+`.env` is git-ignored and is **never deployed** — Telegram Serverless has no
+`process.env`, so deployed code cannot read it. `npm run set-key` bridges the
+two by calling the admin-only `adminConfigure` endpoint.
+
+### Option B — from Telegram
 
 ```
-# OpenAI / Azure / OpenRouter / self-hosted
-/setprovider openai          # or openai_compatible
-/setmodel gpt-4o-mini        # any vision model your provider supports
-/setbaseurl <url>            # optional; default https://api.openai.com/v1
+/setprovider academiccloud   # or openai | groq
+/setmodel qwen3-omni-30b-a3b-instruct
 /setkey <your-api-key>       # the key message is deleted after saving
-
-# Groq (free tier) — vision models
-/setprovider groq
-/setmodel meta-llama/llama-4-scout-17b-16e-instruct    # or meta-llama/llama-4-maverick-17b-128e-instruct
-/setkey gsk_...                          # your Groq API key
-
 /config                      # review current configuration
 ```
 
-For Groq the base URL is already `https://api.groq.com/openai/v1` by default, so
-`/setbaseurl` is not needed.
+Provider presets (base URL is built in, so `/setbaseurl` is not needed):
+
+| Provider | Base URL | Vision model example |
+|---|---|---|
+| `academiccloud` | `https://chat-ai.academiccloud.de/v1` | `qwen3-omni-30b-a3b-instruct` |
+| `groq` | `https://api.groq.com/openai/v1` | `qwen/qwen3.8-27b` |
+| `openai` | `https://api.openai.com/v1` | `gpt-4o-mini` |
+
+Not every model can read an image. Verify one before committing to it:
+
+```
+/testmodel qwen3-omni-30b-a3b-instruct, gemma-4-31b-it
+```
 
 ## Configure the two participants
 

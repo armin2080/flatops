@@ -5,11 +5,13 @@
 import { fetch } from 'sdk';
 import { GROQ_DEFAULT_BASE_URL } from './providers/groq.js';
 import { OPENAI_DEFAULT_BASE_URL } from './providers/openai.js';
+import { ACADEMIC_CLOUD_DEFAULT_BASE_URL } from './providers/academiccloud.js';
 
 const DEFAULT_BASE_URLS = {
   groq: GROQ_DEFAULT_BASE_URL,
   openai: OPENAI_DEFAULT_BASE_URL,
   openai_compatible: OPENAI_DEFAULT_BASE_URL,
+  academiccloud: ACADEMIC_CLOUD_DEFAULT_BASE_URL,
 };
 
 /**

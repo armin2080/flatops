@@ -430,7 +430,7 @@ async function handleSetModel(chatId, tgId, arg) {
 async function handleSetProvider(chatId, tgId, arg) {
   const p = await requireAdmin(chatId, tgId);
   if (!p) return;
-  if (!arg) return api.sendMessage({ chat_id: chatId, text: 'Usage: /setprovider openai | groq' });
+  if (!arg) return api.sendMessage({ chat_id: chatId, text: 'Usage: /setprovider openai | groq | academiccloud' });
   await config.setAiProvider(arg);
   return api.sendMessage({ chat_id: chatId, text: `✅ AI provider set to ${arg}.` });
 }
