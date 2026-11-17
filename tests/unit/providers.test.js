@@ -17,6 +17,29 @@ const settings = { aiApiKey: 'test-key', aiModel: 'some-model', aiBaseUrl: undef
 const body = () => ({ choices: [{ message: { content: '{"store":"X"}' } }] });
 
 describe('provider adapters', () => {
+  it('OpenAI adapter retries without JSON mode when the provider rejects it', async () => {
+    let call = 0;
+    const fn = vi.fn(async () => {
+      call += 1;
+      if (call === 1) {
+        return {
+          ok: false, status: 400,
+          json: async () => ({}),
+          text: async () => 'response_format is not supported',
+        };
+      }
+      return { ok: true, status: 200, json: async () => body(), text: async () => '' };
+    });
+
+    const out = await openaiExtract(fn, settings, 'AAAA', 'image/jpeg');
+    expect(out).toBe('{"store":"X"}');
+    expect(fn).toHaveBeenCalledTimes(2);
+
+    const first = JSON.parse(fn.mock.calls[0][1].body);
+    const second = JSON.parse(fn.mock.calls[1][1].body);
+    expect(first.response_format).toEqual({ type: 'json_object' });
+    expect(second.response_format).toBeUndefined();
+  });
   it('OpenAI adapter sends strict JSON mode', async () => {
     const fn = fakeFetch(body());
     await openaiExtract(fn, settings, 'AAAA', 'image/jpeg');

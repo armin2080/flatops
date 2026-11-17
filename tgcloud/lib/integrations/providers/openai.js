@@ -20,41 +20,68 @@ export async function callChatCompletion(fetchImpl, {
     throw new Error('No AI provider key configured. Use /setkey from the admin account.');
   }
 
-  const body = { model, messages, temperature: 0 };
-  if (includeJsonMode) body.response_format = { type: 'json_object' };
-  // `max_tokens` is the param Groq (and classic OpenAI) honour. Groq's free tier
-  // enforces a small output-tokens-per-minute budget, so a large value here gets
-  // rejected with HTTP 429 ("reduce max_tokens"). We therefore cap it.
-  if (maxTokens) body.max_tokens = maxTokens;
+  const buildBody = (jsonMode) => {
+    const body = { model, messages, temperature: 0 };
+    if (jsonMode) body.response_format = { type: 'json_object' };
+    // `max_tokens` is the param Groq (and classic OpenAI) honour. Groq's free tier
+    // enforces a small output-tokens-per-minute budget, so a large value here gets
+    // rejected with HTTP 429 ("reduce max_tokens"). We therefore cap it.
+    if (maxTokens) body.max_tokens = maxTokens;
+    return body;
+  };
 
-  let res;
-  try {
-    res = await fetchImpl(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    throw new Error(`AI provider request failed: ${err && err.message ? err.message : err}`);
-  }
-
-  if (!res || !res.ok) {
-    let detail = '';
+  const post = async (body) => {
+    let res;
     try {
-      const text = await res.text();
-      detail = text ? text.slice(0, 300) : '';
-    } catch {
-      /* ignore */
+      res = await fetchImpl(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      throw new Error(`AI provider request failed: ${err && err.message ? err.message : err}`);
     }
-    throw new Error(`AI provider returned HTTP ${res ? res.status : 'unknown'}${detail ? `: ${detail}` : ''}`);
+    if (!res || !res.ok) {
+      let detail = '';
+      try {
+        const text = await res.text();
+        detail = text ? text.slice(0, 300) : '';
+      } catch {
+        /* ignore */
+      }
+      const err = new Error(`AI provider returned HTTP ${res ? res.status : 'unknown'}${detail ? `: ${detail}` : ''}`);
+      err.status = res ? res.status : 0;
+      throw err;
+    }
+    return res.json();
+  };
+
+  // Many OpenAI-compatible gateways (OpenRouter, Azure, Academic Cloud, vLLM,
+  // Ollama) reject `response_format` or `max_tokens` on multimodal models with a
+  // 400. Rather than fail the whole extraction, retry once without JSON mode.
+  let data;
+  try {
+    data = await post(buildBody(includeJsonMode));
+  } catch (err) {
+    const retryable = err.status === 400 || err.status === 422;
+    if (!retryable || !includeJsonMode) throw err;
+    data = await post(buildBody(false));
   }
 
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (typeof content !== 'string' || !content.trim()) {
+  const raw = data?.choices?.[0]?.message?.content;
+  // Some gateways return content as an array of parts instead of a string.
+  let content = '';
+  if (typeof raw === 'string') {
+    content = raw;
+  } else if (Array.isArray(raw)) {
+    content = raw
+      .map((p) => (typeof p === 'string' ? p : p && typeof p.text === 'string' ? p.text : ''))
+      .join('');
+  }
+  if (!content.trim()) {
     throw new Error('AI provider returned an empty response.');
   }
   return content;

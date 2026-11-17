@@ -20,6 +20,7 @@ import { getShoppingList, addShoppingItems } from '../lib/store/shopping.js';
 import { listChores, evaluateAndRemind } from '../lib/store/chores.js';
 import { deliverResult } from '../lib/bot/render.js';
 import { listModels, isLikelyVision } from '../lib/integrations/models.js';
+import { probeModels } from '../lib/integrations/probe.js';
 
 const now = () => Math.floor(Date.now() / 1000);
 
@@ -126,6 +127,8 @@ async function handleCommand(message, chatId, from, tgId) {
       return handleSetUrl(chatId, tgId, arg);
     case '/models':
       return handleModels(chatId, tgId);
+    case '/testmodel':
+      return handleTestModel(chatId, tgId, arg);
     default:
       return api.sendMessage({ chat_id: chatId, text: `Unknown command. Use /help to see what I can do.` });
   }
@@ -395,7 +398,7 @@ async function handleConfig(chatId, tgId) {
       `AI key: ${pub.hasApiKey ? 'configured ✅' : '❌ missing'}`,
       `Mini App URL: ${pub.miniAppUrl || '❌ not set'}`,
       '',
-      'Commands: /setkey <key> · /setmodel <m> · /setprovider <p> · /setbaseurl <url> · /seturl <mini-app-url> · /models',
+      'Commands: /setkey <key> · /setmodel <m> · /setprovider <p> · /setbaseurl <url> · /seturl <mini-app-url> · /models · /testmodel <m>',
     ].join('\n'),
   });
 }
@@ -446,6 +449,46 @@ async function handleSetUrl(chatId, tgId, arg) {
   if (!arg) return api.sendMessage({ chat_id: chatId, text: 'Usage: /seturl <https://app<id>.tgcloud.ai/>' });
   await config.setMiniAppUrl(arg);
   return api.sendMessage({ chat_id: chatId, text: '✅ Mini App URL saved.' });
+}
+
+async function handleTestModel(chatId, tgId, arg) {
+  const p = await requireAdmin(chatId, tgId);
+  if (!p) return;
+  if (!arg) {
+    await api.sendMessage({
+      chat_id: chatId,
+      text: [
+        'Usage: /testmodel <model-id>',
+        '',
+        'Runs a real extraction on your latest receipt image with that model and',
+        'reports whether it worked — so you can compare models instead of guessing.',
+        '',
+        'One model: /testmodel qwen3-omni-30b-a3b-instruct',
+        'Several:  /testmodel model-a, model-b',
+        '',
+        'Use /models to see what your provider offers.',
+      ].join('\n'),
+    });
+    return;
+  }
+
+  const models = arg.split(/[,\n]/).map((s) => s.trim()).filter(Boolean).slice(0, 5);
+  await api.sendMessage({ chat_id: chatId, text: `🧪 Testing ${models.length} model(s) on your latest receipt… this can take a moment.` });
+
+  const results = await probeModels(models);
+  const lines = results.map((r) => {
+    if (r.ok) {
+      const total = r.printedTotalCents != null ? ` · ${formatCents(r.printedTotalCents)}` : '';
+      const sample = r.sample && r.sample.length ? `\n   e.g. ${r.sample.slice(0, 3).join(', ')}` : '';
+      return `✅ ${r.model}\n   ${r.itemCount} items${total} · ${r.elapsedMs}ms${sample}`;
+    }
+    return `❌ ${r.model}\n   ${r.error || 'failed'}`;
+  });
+
+  await api.sendMessage({
+    chat_id: chatId,
+    text: ['🧪 Model test results', '', ...lines].join('\n'),
+  });
 }
 
 async function handleModels(chatId, tgId) {
